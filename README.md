@@ -66,10 +66,9 @@ Prepare roles, neural networks, dataset >> Define test environment >> Run it >> 
 
 Here we take Gossip Learning for example and take you through the steps of running DML on your own environment.
 
-1. The only thing to do in Worker is to run `worker_agent.py` with python3 __with root privileges__. We need to mount
-NFS and install Python packages via `python3-pip` which require root privileges.
-2. All the following operations should be completed in the Controller (You may also need to have a look at Worker
-outputs to see if a sudo password is required. If so, enter your password in Worker.)
+1. The only thing to do in Worker is to run `worker_agent.py` with python3 (__root privileges__ recommended). We need to
+mount NFS and install Python packages via `python3-pip` which require root privileges.
+2. All the following operations should be completed in the Controller.
 3. Modify `controller/appConfig-gl.yml` to define your test environment. See `controller/appConfig-template.yml` for
 instructions.
 4. Modify `controller/dml_tool/gl_dataset.json` to define the data used by each node.
@@ -77,6 +76,10 @@ instructions.
 `controller/dml_tool/README.md` for more.
 6. Run `controller/gl_run_new.py` with python3 __with root privileges__ and keep it running on a terminal (called
 Term).
+   * Note that `sudo python3` and `python3` may result in different Python environments, especially when using a virtual
+   environment where you should probably run without sudo.
+   * If you need to run without sudo, you will need to enter sudo password when needed. Pay attention to the terminal
+   output to prevent a password timeout.
 7. In path `controller/dml_tool`:
     1. Run command `python3 dataset_conf.py -f gl_dataset.json` to generate dataset conf files;
     2. Run command `python3 conf_generator.py -f gl_structure.json -p 4444 gl_structure_conf_new.GlConfGenerator` to
@@ -87,5 +90,4 @@ have received the dataset conf file.
 have received the structure conf file.
 10. When a `tc finish` is displayed on the Term, you are ready to move on.
 11. Run command `curl localhost:3333/start` to start all nodes.
-12. When there is no node _Gossip_, run command `curl localhost:3333/finish` to stop all nodes and collect result
-files.
+12. When there is no node _Gossip_, run command `curl localhost:3333/finish` to stop all nodes and collect result files.

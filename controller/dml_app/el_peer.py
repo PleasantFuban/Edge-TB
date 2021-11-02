@@ -120,15 +120,15 @@ def on_route_log ():
 
 def send_weights_down (weights, nodes, self_layer):
 	if self_layer == 2:
-		send_self = dml_utils.send_weights (weights, '/train', nodes, conf ['connect'],
-			forward=conf ['forward'], layer=self_layer)
+		send_self = dml_utils.send_arrays (weights, '/train', nodes, conf ['connect'],
+										   forward=conf ['forward'], layer=self_layer)
 		if send_self == 1:
 			worker_utils.log ('send self at /train')
 			on_route_train (weights)
 
 	elif self_layer > 2:
-		send_self = dml_utils.send_weights (weights, '/replace', nodes, conf ['connect'],
-			forward=conf ['forward'], layer=self_layer)
+		send_self = dml_utils.send_arrays (weights, '/replace', nodes, conf ['connect'],
+										   forward=conf ['forward'], layer=self_layer)
 		if send_self == 1:
 			worker_utils.log ('send self at /replace')
 			on_route_replace (weights, self_layer)
@@ -154,7 +154,7 @@ def on_route_start ():
 def route_replace ():
 	from_layer = request.form.get ('layer', type=int)
 	print ('POST at /replace from layer ' + str (from_layer))
-	weights = dml_utils.parse_weights (request.files.get ('weights'))
+	weights = dml_utils.parse_arrays (request.files.get ('weights'))
 	executor.submit (on_route_replace, weights, from_layer)
 	return ''
 
@@ -171,7 +171,7 @@ def on_route_replace (weights, from_layer):
 def route_combine ():
 	from_layer = request.form.get ('layer', type=int)
 	print ('POST at /combine from layer ' + str (from_layer))
-	weights = dml_utils.parse_weights (request.files.get ('weights'))
+	weights = dml_utils.parse_arrays (request.files.get ('weights'))
 	executor.submit (on_route_combine, weights, from_layer)
 	return ''
 
@@ -211,8 +211,8 @@ def combine_weights (self_layer, layer_index):
 			worker_utils.send_data ('GET', '/finish', ctl_addr)
 		# isn't the top node.
 		else:
-			send_self = dml_utils.send_weights (weights, '/combine', conf ['father_node'] [layer_index:layer_index + 1],
-				conf ['connect'], forward=conf ['forward'], layer=self_layer)
+			send_self = dml_utils.send_arrays (weights, '/combine', conf ['father_node'] [layer_index:layer_index + 1],
+											   conf ['connect'], forward=conf ['forward'], layer=self_layer)
 			if send_self == 1:
 				worker_utils.log ('send self at /combine')
 				on_route_combine (weights, self_layer)
@@ -227,7 +227,7 @@ def combine_weights (self_layer, layer_index):
 @app.route ('/train', methods=['POST'])
 def route_train ():
 	print ('POST at /train')
-	weights = dml_utils.parse_weights (request.files.get ('weights'))
+	weights = dml_utils.parse_arrays (request.files.get ('weights'))
 	executor.submit (on_route_train, weights)
 	return ''
 
@@ -244,8 +244,8 @@ def on_route_train (received_weights):
 	worker_utils.send_print (ctl_addr, node_name + ': ' + msg)
 
 	latest_weights = nn.model.get_weights ()
-	send_self = dml_utils.send_weights (latest_weights, '/combine', conf ['father_node'] [:1],
-		conf ['connect'], forward=conf ['forward'], layer=1)
+	send_self = dml_utils.send_arrays (latest_weights, '/combine', conf ['father_node'] [:1],
+									   conf ['connect'], forward=conf ['forward'], layer=1)
 	if send_self == 1:
 		worker_utils.log ('send self at /combine')
 		on_route_combine (latest_weights, 1)
@@ -271,10 +271,10 @@ def route_forward ():
 def on_route_forward (weights, data):
 	if data ['node'] in conf ['connect']:
 		addr = conf ['connect'] [data ['node']]
-		dml_utils.send_weights_helper (weights, data, addr, is_forward=False)
+		dml_utils._send_arrays_helper (weights, data, addr, is_forward=False)
 	else:
 		addr = conf ['forward'] [data ['node']]
-		dml_utils.send_weights_helper (weights, data, addr, is_forward=True)
+		dml_utils._send_arrays_helper (weights, data, addr, is_forward=True)
 	weights.seek (0)
 	weights.truncate ()
 

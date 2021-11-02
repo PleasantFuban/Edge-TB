@@ -55,7 +55,7 @@ class ElPeer(Role):
         def route_replace():
             from_layer = request.form.get('layer', type=int)
             print('POST at /replace from layer ' + str(from_layer))
-            weights = dml_utils.parse_weights(request.files.get('weights'))
+            weights = dml_utils.parse_arrays(request.files.get('weights'))
             self.executor.submit(self.on_route_replace, weights, from_layer)
             return ''
 
@@ -64,7 +64,7 @@ class ElPeer(Role):
         def route_combine():
             from_layer = request.form.get('layer', type=int)
             print('POST at /combine from layer ' + str(from_layer))
-            weights = dml_utils.parse_weights(request.files.get('weights'))
+            weights = dml_utils.parse_arrays(request.files.get('weights'))
             self.executor.submit(self.on_route_combine, weights, from_layer)
             return ''
 
@@ -72,7 +72,7 @@ class ElPeer(Role):
         @self.app.route('/train', methods=['POST'])
         def route_train():
             print('POST at /train')
-            weights = dml_utils.parse_weights(request.files.get('weights'))
+            weights = dml_utils.parse_arrays(request.files.get('weights'))
             self.executor.submit(self.on_route_train, weights)
             return ''
 
@@ -81,8 +81,8 @@ class ElPeer(Role):
             print('POST at /forward')
             node = request.form['node']
             path = request.form['path']
-            worker_utils.log('forward to ' + node + path)
-            data = {'node': node, 'path': path, 'layer': request.form['layer']}
+            worker_utils.log(f'forward to {node} {path}')
+            data = dict(request.form)       # node, path, layer
 
             # exit the route_replace () will release the file weights.
             weights = io.BytesIO()
@@ -99,16 +99,16 @@ class ElPeer(Role):
 
     def send_weights_down(self, weights, nodes):
         if self.layer == 2:
-            send_self = dml_utils.send_weights(weights, '/train', nodes, self.conf['connect'],
-                                               forward=self.conf['forward'], layer=self.layer)
-            if send_self == 1:
+            send_self = dml_utils.send_arrays(weights, '/train', nodes, self.conf['connect'],
+                                              forward=self.conf['forward'], forward_path='/forward', layer=self.layer)
+            if send_self:
                 worker_utils.log('send self at /train')
                 self.on_route_train(weights)
 
         elif self.layer > 2:
-            send_self = dml_utils.send_weights(weights, '/replace', nodes, self.conf['connect'],
-                                               forward=self.conf['forward'], layer=self.layer)
-            if send_self == 1:
+            send_self = dml_utils.send_arrays(weights, '/replace', nodes, self.conf['connect'],
+                                              forward=self.conf['forward'], forward_path='/forward', layer=self.layer)
+            if send_self:
                 worker_utils.log('send self at /replace')
                 self.on_route_replace(weights, self.layer)
 
@@ -152,10 +152,11 @@ class ElPeer(Role):
                 worker_utils.send_data('GET', '/finish', self.ctl_addr)
             # isn't the top node.
             else:
-                send_self = dml_utils.send_weights(weights, '/combine',
-                                                   self.conf['father_node'][layer_index:layer_index + 1],
-                                                   self.conf['connect'], forward=self.conf['forward'], layer=self.layer)
-                if send_self == 1:
+                send_self = dml_utils.send_arrays(weights, '/combine',
+                                                  self.conf['father_node'][layer_index:layer_index + 1],
+                                                  self.conf['connect'], forward=self.conf['forward'],
+                                                  forward_path='/forward', layer=self.layer)
+                if send_self:
                     worker_utils.log('send self at /combine')
                     self.on_route_combine(weights, self.layer)
 
@@ -176,19 +177,16 @@ class ElPeer(Role):
         worker_utils.send_print(self.ctl_addr, self.node_name + ': ' + msg)
 
         latest_weights = self.nn.model.get_weights()
-        send_self = dml_utils.send_weights(latest_weights, '/combine', self.conf['father_node'][:1],
-                                           self.conf['connect'], forward=self.conf['forward'], layer=1)
+        send_self = dml_utils.send_arrays(latest_weights, '/combine', self.conf['father_node'][:1],
+                                          self.conf['connect'],
+                                          forward=self.conf['forward'], forward_path='/forward', layer=1)
         if send_self == 1:
             worker_utils.log('send self at /combine')
             self.on_route_combine(latest_weights, 1)
 
     def on_route_forward(self, weights, data):
-        if data['node'] in self.conf['connect']:
-            addr = self.conf['connect'][data['node']]
-            dml_utils.send_weights_helper(weights, data, addr, is_forward=False)
-        else:
-            addr = self.conf['forward'][data['node']]
-            dml_utils.send_weights_helper(weights, data, addr, is_forward=True)
+        dml_utils.send_arrays_single(weights, None, None, self.conf['connect'], self.conf['forward'], '/forward',
+                                     **data)
         weights.seek(0)
         weights.truncate()
 

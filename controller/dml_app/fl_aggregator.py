@@ -117,7 +117,7 @@ def route_ttime ():
 def route_stest ():
 	print ('POST at /stest')
 	# just get the weights to test the time.
-	_ = dml_utils.parse_weights (request.files.get ('weights'))
+	_ = dml_utils.parse_arrays (request.files.get ('weights'))
 	return ''
 
 
@@ -190,7 +190,7 @@ def route_start ():
 def on_route_start ():
 	# trainers = dml_utils.random_selection (trainer_list, trainer_per_round)
 	trainers = customized_selection (trainer_per_round)
-	dml_utils.send_weights (initial_weights, '/train', trainers, conf ['connect'])
+	dml_utils.send_arrays (initial_weights, '/train', trainers, conf ['connect'])
 	worker_utils.send_print (ctl_addr, 'start FL')
 
 
@@ -198,7 +198,7 @@ def on_route_start ():
 @app.route ('/combine', methods=['POST'])
 def route_combine ():
 	print ('POST at /combine')
-	weights = dml_utils.parse_weights (request.files.get ('weights'))
+	weights = dml_utils.parse_arrays (request.files.get ('weights'))
 	executor.submit (on_route_combine, weights)
 	return ''
 
@@ -233,7 +233,7 @@ def combine_weights ():
 	else:
 		# trainers = dml_utils.random_selection (trainer_list, trainer_per_round)
 		trainers = customized_selection (trainer_per_round)
-		dml_utils.send_weights (weights, '/train', trainers, conf ['connect'])
+		dml_utils.send_arrays (weights, '/train', trainers, conf ['connect'])
 
 
 app.run (host='0.0.0.0', port=dml_port, threaded=True)

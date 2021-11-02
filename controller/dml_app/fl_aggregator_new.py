@@ -66,7 +66,7 @@ class FlAggregator(Role):
         def route_stest():
             print('POST at /stest')
             # just get the weights to test the time.
-            _ = dml_utils.parse_weights(request.files.get('weights'))
+            _ = dml_utils.parse_arrays(request.files.get('weights'))
             return ''
 
         @self.app.route('/stime', methods=['GET'])
@@ -123,7 +123,7 @@ class FlAggregator(Role):
         @self.app.route('/combine', methods=['POST'])
         def route_combine():
             print('POST at /combine')
-            weights = dml_utils.parse_weights(request.files.get('weights'))
+            weights = dml_utils.parse_arrays(request.files.get('weights'))
             self.executor.submit(self.on_route_combine, weights)
             return ''
 
@@ -137,7 +137,7 @@ class FlAggregator(Role):
     def on_route_start(self):
         # trainers_round = dml_utils.random_selection (self.trainers, self.trainer_per_round)
         trainers_round = self.customized_selection(self.trainer_per_round)
-        dml_utils.send_weights(self.initial_weights, '/train', trainers_round, self.conf['connect'])
+        dml_utils.send_arrays(self.initial_weights, '/train', trainers_round, self.conf['connect'])
         worker_utils.send_print(self.ctl_addr, 'start FL')
 
     def on_route_combine(self, weights):
@@ -161,12 +161,12 @@ class FlAggregator(Role):
         worker_utils.send_print(self.ctl_addr, self.node_name + ': ' + msg)
 
         if self.current_round == self.conf['sync']:
-            worker_utils.log('>>>>>training ended<<<<<')
+            worker_utils.log('>>>>> training ended <<<<<')
             worker_utils.send_data('GET', '/finish', self.ctl_addr)
         else:  # send down to train.
             # trainers_round = dml_utils.random_selection (self.trainers, self.trainer_per_round)
             trainers_round = self.customized_selection(self.trainer_per_round)
-            dml_utils.send_weights(weights, '/train', trainers_round, self.conf['connect'])
+            dml_utils.send_arrays(weights, '/train', trainers_round, self.conf['connect'])
 
 
 if __name__ == '__main__':

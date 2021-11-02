@@ -94,7 +94,7 @@ def perf_eval ():
 	worker_utils.send_data ('GET', path, addr)
 
 	s = time.time ()
-	dml_utils.send_weights (nn.model.get_weights (), '/stest', conf ['father_node'], conf ['connect'])
+	dml_utils.send_arrays (nn.model.get_weights (), '/stest', conf ['father_node'], conf ['connect'])
 	e = time.time () - s
 	path = '/stime?node=' + node_name + '&time=' + str (e)
 	worker_utils.log (node_name + ': send time=' + str (e))
@@ -116,7 +116,7 @@ def on_route_log ():
 @app.route ('/train', methods=['POST'])
 def route_train ():
 	print ('POST at /train')
-	weights = dml_utils.parse_weights (request.files.get ('weights'))
+	weights = dml_utils.parse_arrays (request.files.get ('weights'))
 	executor.submit (on_route_train, weights)
 	return ''
 
@@ -130,7 +130,7 @@ def on_route_train (received_weights):
 	last_epoch_loss = loss_list [-1]
 	msg = dml_utils.log_loss (last_epoch_loss, conf ['current_round'])
 	worker_utils.send_print (ctl_addr, node_name + ': ' + msg)
-	dml_utils.send_weights (nn.model.get_weights (), '/combine', conf ['father_node'], conf ['connect'])
+	dml_utils.send_arrays (nn.model.get_weights (), '/combine', conf ['father_node'], conf ['connect'])
 
 
 app.run (host='0.0.0.0', port=dml_port, threaded=True)

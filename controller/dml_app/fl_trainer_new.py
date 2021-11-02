@@ -28,7 +28,7 @@ class FlTrainer(Role):
         worker_utils.send_data('GET', path, addr)
 
         s = time.time()
-        dml_utils.send_weights(self.nn.model.get_weights(), '/stest', self.conf['father_node'], self.conf['connect'])
+        dml_utils.send_arrays(self.nn.model.get_weights(), '/stest', self.conf['father_node'], self.conf['connect'])
         e = time.time() - s
         path = '/stime?node=' + self.node_name + '&time=' + str(e)
         worker_utils.log(self.node_name + ': send time=' + str(e))
@@ -42,7 +42,7 @@ class FlTrainer(Role):
         @self.app.route('/train', methods=['POST'])
         def on_route_train():
             print('POST at /train')
-            weights = dml_utils.parse_weights(request.files.get('weights'))
+            weights = dml_utils.parse_arrays(request.files.get('weights'))
             self.executor.submit(self.on_route_train, weights)
             return ''
 
@@ -55,7 +55,7 @@ class FlTrainer(Role):
         last_epoch_loss = loss_list[-1]
         msg = dml_utils.log_loss(last_epoch_loss, self.current_round)
         worker_utils.send_print(self.ctl_addr, self.node_name + ': ' + msg)
-        dml_utils.send_weights(self.nn.model.get_weights(), '/combine', self.conf['father_node'], self.conf['connect'])
+        dml_utils.send_arrays(self.nn.model.get_weights(), '/combine', self.conf['father_node'], self.conf['connect'])
 
 
 if __name__ == '__main__':

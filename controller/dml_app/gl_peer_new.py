@@ -33,7 +33,7 @@ class GlPeer(Role):
         @self.app.route('/gossip', methods=['POST'])
         def route_train():
             print('POST at /gossip')
-            weights = dml_utils.parse_weights(request.files.get('weights'))
+            weights = dml_utils.parse_arrays(request.files.get('weights'))
             self.executor.submit(self.on_route_gossip, weights)
             return ''
 
@@ -45,7 +45,7 @@ class GlPeer(Role):
     def gossip(self):
         peer = dml_utils.random_selection(self.peer_list, 1)
         worker_utils.log("gossip to " + peer[0])
-        dml_utils.send_weights(self.nn.model.get_weights(), '/gossip', peer, self.conf['connect'])
+        dml_utils.send_arrays(self.nn.model.get_weights(), '/gossip', peer, self.conf['connect'])
 
     def on_route_gossip(self, received_weights):
         self.weights_lock.acquire()

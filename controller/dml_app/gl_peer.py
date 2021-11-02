@@ -123,7 +123,7 @@ def on_route_start ():
 @app.route ('/gossip', methods=['POST'])
 def route_train ():
 	print ('POST at /gossip')
-	weights = dml_utils.parse_weights (request.files.get ('weights'))
+	weights = dml_utils.parse_arrays (request.files.get ('weights'))
 	executor.submit (on_route_gossip, weights)
 	return ''
 
@@ -154,7 +154,7 @@ def on_route_gossip (received_weights):
 def gossip ():
 	peer = dml_utils.random_selection (peer_list, 1)
 	worker_utils.log ("gossip to " + peer [0])
-	dml_utils.send_weights (nn.model.get_weights (), '/gossip', peer, conf ['connect'])
+	dml_utils.send_arrays (nn.model.get_weights (), '/gossip', peer, conf ['connect'])
 
 
 app.run (host='0.0.0.0', port=dml_port, threaded=True)

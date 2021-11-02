@@ -1,0 +1,36 @@
+appConfig:
+  general:
+    localIP: 192.168.2.28
+    port: 3333
+    dmlPort: 4444
+    agentPort: 3333
+  nfs:
+    subnet: 192.168.2.0/24
+  emulator:
+    images:
+      dml:1.0:
+        dockerfile: dml_app/Dockerfile
+        requirements: dml_app/dml_req.txt
+  physical:
+    requirements: dml_app/dml_req.txt
+  hosts:
+    3990x:
+      ip: 192.168.2.4
+  nodes:
+    n1:
+      type: emulator
+      cmd: python3 ra_peer_new.py -p $dmlPort
+      host: 3990x
+      docker:
+        containers: 8   # nodes named n1-1, n1-2, etc.
+        memory: 2G      # each
+        cpu: 2          # each
+        nic: eth0
+        image: dml:1.0
+        volumes:
+          dml_file:
+            hostPath: ./dml_file
+            nodePath: /home/worker/dml_file
+        ports:
+          rule: sequential
+          begin: 8001

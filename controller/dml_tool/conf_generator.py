@@ -6,10 +6,10 @@ from typing import Dict
 
 class Conf:
 
-    def __init__(self, name, **kwargs) -> None:
+    def __init__(self, name=None, **kwargs) -> None:
         for k in kwargs:
             setattr(self, k, kwargs[k])
-        self.name = name
+        self.name = name or kwargs[name]
         self.connect: dict = {}
 
     def __hash__(self) -> int:

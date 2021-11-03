@@ -57,4 +57,4 @@ appConfig:
             begin: 8002
   links:
     - n1-master-1 n1-worker* 10 mbps
-    - n1-worker* n1-master random 200 500 kbps
+    - n1-worker* n1-master-1 random 200 500 kbps

@@ -37,12 +37,12 @@ class SspMaster(Role):
         @self.app.route('/clock', methods=['POST'])
         def route_clock_post():
             weights = dml_utils.parse_arrays(request.files.get('weights'))
-            self.executor.submit(self.on_route_clock, weights, request.args.get('node'))
+            self.executor.submit(self.on_route_clock, weights, request.form.get('source'))
             return ''
 
         @self.app.route('/clock', methods=['GET'])
         def route_clock_get():
-            return self.server_clock
+            return str(self.server_clock)
 
         @self.app.route('/data', methods=['GET'])
         def route_data_get():
@@ -64,7 +64,7 @@ class SspMaster(Role):
         self.initial_weights = self.nn.model.get_weights()
         for node in self.workers:
             self.current_clocks[node] = 0
-            dml_utils.send_arrays(self.initial_weights, '/start', self.workers, self.conf['connect'])
+        dml_utils.send_arrays(self.initial_weights, '/start', self.workers, self.conf['connect'])
         worker_utils.send_print(self.ctl_addr, 'start SSP')
 
     def on_route_clock(self, received_weights, node):

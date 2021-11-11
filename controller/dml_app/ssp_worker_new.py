@@ -21,7 +21,7 @@ class SspWorker(Role):
     def load_actions(self) -> None:
         super().load_actions()
 
-        @self.app.route('/start', methods=['GET'])
+        @self.app.route('/start', methods=['POST'])
         def route_start():
             initial_weights = dml_utils.parse_arrays(request.files.get('weights'))
             self.executor.submit(self.on_route_start, initial_weights).add_done_callback(self.on_route_start_cb)
@@ -43,7 +43,7 @@ class SspWorker(Role):
         dml_utils.assign_weights(self.nn.model, initial_weights)
 
     def on_route_start_cb(self, _):
-        self.train_loop()
+        self.executor.submit(self.train_loop)
 
     def read_weights_data(self, force_server_access: bool):
         staleness = self.conf['staleness']
@@ -67,7 +67,7 @@ class SspWorker(Role):
         if push_now:
             # push the update to the server
             dml_utils.send_arrays_single(new_data, '/clock', self.conf['master_node'], self.conf['connect'],
-                                         dtype='weights')
+                                         dtype='weights', source=self.node_name)
 
     # noinspection PyMethodMayBeStatic
     def do_update(self, update):
@@ -75,6 +75,7 @@ class SspWorker(Role):
 
     def train_loop(self):
         address = self.conf['connect'][self.conf['master_node']]
+        print(f'Start train loop, master address is {address}')
         while not self.stop:
             read_from_server: bool = False
 
@@ -93,6 +94,7 @@ class SspWorker(Role):
             # now meet the conditions, do the training job
             _, update_data = self.do_train()
             self.update(update_data)
+            worker_utils.send_data('POST', f'/stop?node={self.node_name}', address)
         return True
 
     def do_train(self, clock_inc: bool = True):
@@ -109,7 +111,7 @@ class SspWorker(Role):
         if clock_inc:
             self.current_clock += 1
         epoch_time = time.time() - begin_time
-        worker_utils.log('Last epoch time: %s' % str(time.asctime(time.localtime(epoch_time))))
+        worker_utils.log('Last epoch time: %s' % epoch_time)
         return epoch_time, self.nn.model.get_weights()
 
 

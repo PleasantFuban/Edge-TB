@@ -1,6 +1,6 @@
 appConfig:
   general:
-    localIP: 192.168.2.25
+    localIP: 192.168.2.29
     port: 3333
     dmlPort: 4444
     agentPort: 3333
@@ -26,11 +26,11 @@ appConfig:
     #   host: 3700x
     n1:
       type: emulator
-      cmd: python3 ssp_worker_new.py -p $dmlPort
       host: 3990x
       dockerGroups:
         master:
           containers: 1   # node named n1-master-1
+          cmd: python3 ssp_master_new.py -p $dmlPort
           memory: 2G      # each
           cpu: 2          # each
           image: dml:1.0
@@ -44,6 +44,7 @@ appConfig:
             begin: 8001
         worker:
           containers: 8   # nodes named n1-worker-1, n1-worker-2, etc.
+          cmd: python3 ssp_worker_new.py -p $dmlPort
           memory: 2G      # each
           cpu: 2          # each
           image: dml:1.0

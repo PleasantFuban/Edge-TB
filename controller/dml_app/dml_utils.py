@@ -4,7 +4,7 @@ from typing import Optional, Union
 
 import numpy as np
 import tensorflow as tf
-from keras.models import Model
+from tensorflow.keras.models import Model
 
 import worker_utils
 
@@ -21,6 +21,16 @@ def load_data(path, start_index, _len, input_shape):
     images = np.concatenate(tuple(x_list))
     labels = np.concatenate(tuple(y_list))
     return images, labels
+
+
+def sample_data(data, labels, size, shuffle=True, **kwargs):
+    if len(labels) != len(data):
+        raise ValueError('Number of data samples and labels does not match')
+    if shuffle:
+        ri = np.random.permutation(len(labels))
+        data = data[ri]
+        labels = labels[ri]
+    return data[0:size], labels[0:size]
 
 
 def train_all(model, images, labels, epochs, batch_size):
@@ -61,16 +71,14 @@ def test_on_batch(model, images, labels, batch_size):
     return total_loss / sample_number, total_acc / sample_number
 
 
-def reduce_mean_loss(y_truth, y_predicted):
-    return tf.reduce_mean(tf.pow(y_truth - y_predicted, 2))
-
-
-def compute_gradients(model: Model, images, labels, loss_fn=reduce_mean_loss):
+def compute_gradients(model: Model, images, labels, sample_size=0):
+    if sample_size > 0:
+        images, labels = sample_data(images, labels, sample_size)
     with tf.GradientTape() as tape:
         logits = model(images)
-        loss_value = loss_fn(labels, logits)
+        loss_value = model.loss(labels, logits)
     gradients = tape.gradient(loss_value, model.trainable_weights)
-    return gradients
+    return [g.numpy() for g in gradients]
 
 
 def apply_gradients(target: Union[Model, list, np.array], gradients, optimizer=None, clip=None, **kwargs):
@@ -132,7 +140,7 @@ def send_arrays(arrays, path: Optional[str], node_list, connect, forward=None, f
     np.save(write, arrays)
     write.seek(0)
     for node in node_list:
-        send_self = send_self or _send_arrays_single(write, path, node, connect, forward, forward_path, **kwargs)
+        send_self = _send_arrays_single(write, path, node, connect, forward, forward_path, **kwargs) or send_self
         write.seek(0)
     write.truncate()
     return send_self
@@ -184,7 +192,8 @@ def _send_arrays_single(arrays_write, path: str, node_name, connect, forward=Non
         return False
     if node_name in connect:
         address = connect[node_name]
-        data = kwargs
+        data = {'node': node_name}
+        data.update(kwargs)
         _send_arrays_helper(arrays_write, data, address, path)
     elif forward and (node_name in forward):
         address = forward[node_name]

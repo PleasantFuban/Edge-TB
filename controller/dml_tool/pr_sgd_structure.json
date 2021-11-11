@@ -1,0 +1,14 @@
+{
+    "epochs": 10,
+    "nodes": [
+        {"name": "n1-master-1"},
+        {"name": "n1-worker-1", "iterations": 10},
+        {"name": "n1-worker-2", "iterations": 10},
+        {"name": "n1-worker-3", "iterations": 10},
+        {"name": "n1-worker-4", "iterations": 10},
+        {"name": "n1-worker-5", "iterations": 10},
+        {"name": "n1-worker-6", "iterations": 10},
+        {"name": "n1-worker-7", "iterations": 10},
+        {"name": "n1-worker-8", "iterations": 10}
+    ]
+}

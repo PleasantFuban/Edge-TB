@@ -220,7 +220,7 @@ class Emulator(object):
             for key in en.env:
                 service['environment'].append('key=' + en.env[key])
             # TODO 4444 and /hi
-            heartbeat_url = 'http://localhost:' + list(en.port.values())[0] + '/hi'
+            heartbeat_url = f'http://localhost:{list(en.port.keys())[0]}/hi'
             service['healthcheck'] = {'test': 'curl -f ' + heartbeat_url}
             if en.volume:
                 service['volumes'] = []
@@ -241,7 +241,7 @@ class Emulator(object):
         # save as yml file
         yml_filename = os.path.join(target, (filename or self.name) + '.yml')
         with open(yml_filename, 'w') as f:
-            yaml.safe_dump(compose_data, f, default_flow_style=False)
+            yaml.safe_dump(compose_data, f, sort_keys=False, default_flow_style=False)
 
 
 class Net(object):

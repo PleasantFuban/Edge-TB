@@ -34,6 +34,7 @@ class Role:
         self.executor = ThreadPoolExecutor(1)
         """ The thread pool executor. """
         self.weights_lock = threading.Lock()
+        self.gradients_lock = threading.Lock()
 
         self.train_path = train_path
         self.test_path = test_path
